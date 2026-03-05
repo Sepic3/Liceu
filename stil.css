@@ -1,0 +1,41 @@
+/* fundal și text */
+body {
+    background-color: #f2f2f2; /* gri deschis, mai plăcut ochiului */
+    font-family: Arial, sans-serif;
+    color: #333333;
+    line-height: 1.6;
+    margin: 20px;
+}
+
+/* titluri */
+h1, h2, h3 {
+    color: #004080; /* albastru închis */
+    text-align: center;
+}
+
+/* poze */
+img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: 10px auto;
+    border-radius: 8px; /* colțuri rotunjite */
+}
+
+/* link-uri */
+a {
+    color: #0066cc;
+    text-decoration: none;
+}
+a:hover {
+    text-decoration: underline;
+}
+
+/* secțiuni */
+section {
+    background-color: #ffffff;
+    padding: 15px;
+    margin: 15px 0;
+    border-radius: 10px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}

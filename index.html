@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<title>TSUNAMI</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400;1,600&family=Barlow+Condensed:wght@300;400;600;700;800&display=swap');
+
+*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+:root {
+  --deep:#03071E; --navy:#03045E; --ocean:#023E8A;
+  --teal:#0096C7; --light:#00B4D8; --cyan:#48CAE4;
+  --ice:#ADE8F4; --white:#FFFFFF; --off:#D6EEFF;
+  --dim:#7AB8D4; --gold:#FFD166; --danger:#FF6B35;
+}
+html,body { width:100vw; height:100vh; overflow:hidden; background:#000; font-family:'Barlow',sans-serif; cursor:none; }
+
+/* CURSOR */
+#cur  { position:fixed; width:22px; height:22px; border:2px solid var(--light); border-radius:50%; pointer-events:none; transform:translate(-50%,-50%); z-index:9999; transition:transform .15s; }
+#cur2 { position:fixed; width:6px;  height:6px;  background:var(--light); border-radius:50%; pointer-events:none; transform:translate(-50%,-50%); z-index:9999; }
+
+/* PROGRESS */
+#prog { position:fixed; top:0; left:0; height:4px; background:var(--light); box-shadow:0 0 16px var(--light); transition:width .6s ease; z-index:999; }
+
+/* NAV */
+#nav {
+  position:fixed; bottom:28px; left:50%; transform:translateX(-50%);
+  display:flex; align-items:center; gap:20px;
+  background:rgba(3,4,94,.75); backdrop-filter:blur(16px);
+  border:1px solid rgba(0,180,216,.25); border-radius:50px;
+  padding:10px 24px; z-index:1000;
+}
+.nbtn { width:44px; height:44px; border-radius:50%; border:1px solid rgba(0,180,216,.5); background:rgba(0,180,216,.1); color:var(--light); font-size:20px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .2s; outline:none; }
+.nbtn:hover { background:rgba(0,180,216,.35); transform:scale(1.12); }
+.ndots { display:flex; gap:10px; align-items:center; }
+.dot { width:7px; height:7px; border-radius:50%; background:rgba(0,180,216,.3); cursor:pointer; transition:all .3s; }
+.dot.on { background:var(--light); width:24px; border-radius:4px; }
+
+/* SLIDE SYSTEM */
+.deck { width:100vw; height:100vh; position:relative; }
+.slide { position:absolute; inset:0; opacity:0; pointer-events:none; transition:opacity .65s ease; overflow:hidden; display:flex; flex-direction:column; }
+.slide.on { opacity:1; pointer-events:all; }
+
+/* BACKGROUND */
+.bg {
+  position:absolute; inset:0;
+  background:linear-gradient(170deg,#03071E 0%,#03045E 45%,#023E8A 85%,#0077B6 100%);
+}
+.bg::before { content:''; position:absolute; inset:0; background: radial-gradient(ellipse 55% 35% at 85% 15%,rgba(0,180,216,.1) 0%,transparent 70%), radial-gradient(ellipse 35% 25% at 5% 75%,rgba(0,96,199,.07) 0%,transparent 60%); }
+.bg::after  { content:''; position:absolute; inset:0; background:linear-gradient(135deg,rgba(0,180,216,.05) 0%,transparent 45%); }
+
+/* WAVES */
+.waves { position:absolute; bottom:0; left:0; right:0; height:200px; overflow:hidden; pointer-events:none; }
+.w { position:absolute; bottom:0; width:220%; left:-60%; border-radius:43% 57% 60% 40%/50% 45% 55% 50%; animation:wv linear infinite; }
+.w1{ height:120px; background:rgba(0,100,160,.55); animation-duration:10s; }
+.w2{ height:95px;  background:rgba(0,130,190,.45); animation-duration:13s; animation-delay:-4s; }
+.w3{ height:72px;  background:rgba(0,160,210,.35); animation-duration:8s;  animation-delay:-2s; }
+.w4{ height:48px;  background:rgba(72,202,228,.25); animation-duration:11s; animation-delay:-6s; }
+@keyframes wv {
+  0%  { transform:translateX(0)   scaleY(1); }
+  30% { transform:translateX(7%)  scaleY(1.07); }
+  60% { transform:translateX(12%) scaleY(.96); }
+  100%{ transform:translateX(0)   scaleY(1); }
+}
+
+/* SECTION BAR */
+.sbar { position:absolute; top:0; left:0; right:0; height:56px; background:rgba(2,62,138,.5); backdrop-filter:blur(8px); border-bottom:1px solid rgba(0,180,216,.2); display:flex; align-items:center; padding:0 50px; z-index:10; }
+.slabel { font-family:'Barlow Condensed'; font-size:15px; font-weight:600; letter-spacing:6px; color:var(--cyan); text-transform:uppercase; }
+.scounter { margin-left:auto; font-family:'Barlow Condensed'; font-size:13px; font-weight:300; letter-spacing:4px; color:var(--dim); }
+
+/* KEYFRAMES */
+@keyframes titleIn { from{ opacity:0; transform:translateY(35px); } to{ opacity:1; transform:translateY(0); } }
+@keyframes fadeIn  { from{ opacity:0; } to{ opacity:1; } }
+@keyframes slideUp { from{ opacity:0; transform:translateY(28px); } to{ opacity:1; transform:translateY(0); } }
+@keyframes ringp   { 0%,100%{ opacity:.12; } 50%{ opacity:.3; } }
+
+/* ── SLIDE 1 COVER ── */
+#s1 .content { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; padding-bottom:90px; z-index:5; }
+.ring { position:absolute; border-radius:50%; border:1px solid rgba(0,180,216,.15); top:50%; left:50%; animation:ringp 4s ease-in-out infinite; pointer-events:none; }
+.r1{ width:480px; height:480px; transform:translate(-50%,-58%); }
+.r2{ width:650px; height:650px; transform:translate(-50%,-58%); animation-delay:-1.5s; opacity:.6; }
+.r3{ width:820px; height:820px; transform:translate(-50%,-58%); animation-delay:-3s; opacity:.3; }
+
+/* WAVE CRASH — full-screen blue wave sweeps up and reveals title */
+.wcrash {
+  position:absolute; left:-10%; right:-10%; bottom:-60%;
+  height:160%;
+  border-radius:38% 62% 0 0/30% 30% 0 0;
+  background:linear-gradient(180deg,#00B4D8 0%,#023E8A 50%,#03045E 100%);
+  animation:crashUp 2.2s cubic-bezier(.25,.46,.45,.94) forwards;
+  z-index:20; pointer-events:none;
+  box-shadow:0 -20px 80px rgba(0,180,216,.6);
+}
+@keyframes crashUp {
+  0%  { transform:translateY(5%);   }
+  42% { transform:translateY(-112%); }
+  65% { transform:translateY(-100%); }
+  100%{ transform:translateY(-220%); }
+}
+/* ripple streaks riding the wave */
+.ripple { position:absolute; left:0; right:0; height:3px; background:rgba(173,232,244,.7); pointer-events:none; z-index:21; animation:rp 2.2s forwards; }
+.rp1{ bottom:53%; animation-delay:0s; }
+.rp2{ bottom:58%; animation-delay:.08s; opacity:.7; }
+.rp3{ bottom:63%; animation-delay:.16s; opacity:.45; }
+@keyframes rp {
+  0%  { transform:scaleX(.2) translateY(0); opacity:1; }
+  45% { transform:scaleX(1.3) translateY(-280px); opacity:.8; }
+  100%{ transform:scaleX(1.6) translateY(-600px); opacity:0; }
+}
+
+.cover-title {
+  font-family:'Bebas Neue'; font-size:clamp(100px,16vw,190px);
+  color:var(--white); letter-spacing:35px; text-align:center; line-height:1;
+  text-shadow:0 0 100px rgba(0,180,216,.5),0 4px 30px rgba(0,0,0,.5);
+  animation:titleIn 1s 1.7s cubic-bezier(.16,1,.3,1) both;
+}
+.cover-line { width:140px; height:2px; margin:22px 0; background:linear-gradient(90deg,transparent,var(--light),transparent); animation:fadeIn .8s 2.1s both; }
+.cover-sub { font-family:'Barlow'; font-size:clamp(18px,2.8vw,28px); color:var(--ice); letter-spacing:5px; font-style:italic; font-weight:300; text-align:center; animation:titleIn .9s 2.3s both; }
+.cover-tag { position:absolute; bottom:130px; font-family:'Barlow Condensed'; font-size:13px; letter-spacing:9px; color:var(--dim); animation:fadeIn .8s 2.7s both; }
+
+/* ── SLIDE 2 CUPRINS ── */
+.cuprins-wrap { display:grid; grid-template-columns:1fr 1fr; gap:18px; padding:76px 50px 110px; height:100%; align-content:center; }
+.ccard { background:rgba(2,62,138,.45); border:1px solid rgba(0,180,216,.2); border-radius:8px; overflow:hidden; display:flex; align-items:stretch; transition:transform .25s,background .25s; animation:slideUp .5s both; }
+.ccard:hover{ transform:translateY(-4px); background:rgba(0,120,180,.3); }
+.cnum { min-width:74px; background:var(--light); display:flex; align-items:center; justify-content:center; font-family:'Bebas Neue'; font-size:42px; color:var(--deep); letter-spacing:2px; }
+.ctxt{ padding:22px 26px; }
+.ctitle { font-family:'Barlow Condensed'; font-size:26px; font-weight:700; color:var(--white); letter-spacing:1px; }
+.csub { font-size:15px; color:var(--dim); margin-top:5px; font-style:italic; }
+.ccard:nth-child(1){animation-delay:.07s} .ccard:nth-child(2){animation-delay:.14s}
+.ccard:nth-child(3){animation-delay:.21s} .ccard:nth-child(4){animation-delay:.28s}
+.ccard:nth-child(5){animation-delay:.35s} .ccard:nth-child(6){animation-delay:.42s}
+
+/* ── SHARED LAYOUT ── */
+.stitle { font-family:'Barlow Condensed'; font-size:clamp(38px,5.5vw,64px); font-weight:800; color:var(--white); padding:70px 50px 0; animation:slideUp .7s .1s both; letter-spacing:1px; line-height:1.1; }
+.sbody { display:flex; gap:24px; padding:20px 50px 110px; flex:1; }
+
+/* ── SLIDE 3 DEFINITIE ── */
+.defbox { flex:1.3; position:relative; overflow:hidden; background:rgba(2,62,138,.45); border-left:4px solid var(--light); border-radius:6px; padding:32px; font-size:18px; line-height:1.85; color:var(--off); animation:slideUp .7s .25s both; }
+.defbox strong{ color:var(--cyan); }
+.kanji { position:absolute; right:16px; bottom:12px; font-size:60px; color:var(--light); opacity:.1; font-family:serif; pointer-events:none; line-height:1; }
+.sgrid { display:grid; grid-template-columns:1fr 1fr; gap:14px; flex:.85; align-content:start; }
+.scard { background:rgba(0,150,199,.2); border:1px solid rgba(0,180,216,.28); border-radius:8px; padding:26px 20px; text-align:center; animation:slideUp .6s both; }
+.scard:nth-child(1){animation-delay:.3s} .scard:nth-child(2){animation-delay:.4s}
+.scard:nth-child(3){animation-delay:.5s} .scard:nth-child(4){animation-delay:.6s}
+.sval { font-family:'Bebas Neue'; font-size:52px; color:var(--white); letter-spacing:3px; line-height:1; }
+.slbl { font-family:'Barlow Condensed'; font-size:14px; letter-spacing:3px; color:var(--dim); text-transform:uppercase; margin-top:6px; }
+
+/* ── SLIDE 4 CAUZE ── */
+.cgrid { display:grid; grid-template-columns:repeat(4,1fr); gap:20px; padding:20px 50px 110px; flex:1; }
+.ccrd { background:rgba(2,62,138,.4); border:1px solid rgba(0,180,216,.18); border-top:4px solid var(--light); border-radius:8px; padding:32px 20px 26px; display:flex; flex-direction:column; align-items:center; text-align:center; animation:slideUp .6s both; transition:transform .25s; }
+.ccrd:hover{ transform:translateY(-6px); }
+.ccrd:nth-child(1){animation-delay:.08s} .ccrd:nth-child(2){animation-delay:.18s; border-top-color:var(--cyan);}
+.ccrd:nth-child(3){animation-delay:.28s; border-top-color:var(--ice);}  .ccrd:nth-child(4){animation-delay:.38s;}
+.cicn { font-size:56px; margin-bottom:20px; }
+.ctit { font-family:'Barlow Condensed'; font-size:23px; font-weight:700; color:var(--white); margin-bottom:10px; letter-spacing:1px; }
+.csep { width:42px; height:2px; background:var(--light); margin:10px auto; opacity:.6; }
+.cdesc { font-size:15px; line-height:1.75; color:var(--ice); }
+
+/* ── SLIDE 5 CLASIFICARE ── */
+.clbody { display:grid; grid-template-columns:1fr 1fr; gap:28px; padding:20px 50px 110px; flex:1; }
+.clhead { background:rgba(0,150,199,.35); padding:14px 22px; font-family:'Barlow Condensed'; font-size:14px; font-weight:700; letter-spacing:5px; color:var(--white); text-transform:uppercase; border-radius:6px 6px 0 0; }
+.cltbl { background:rgba(2,62,138,.35); border-radius:0 0 6px 6px; overflow:hidden; }
+.clrow { display:grid; grid-template-columns:130px 1fr; border-bottom:1px solid rgba(0,180,216,.1); padding:14px 18px; gap:14px; align-items:center; animation:slideUp .5s both; }
+.clrow:nth-child(odd){ background:rgba(0,180,216,.04); }
+.clrow:last-child{ border-bottom:none; }
+.clkey { font-family:'Barlow Condensed'; font-size:18px; font-weight:700; color:var(--light); }
+.clkey.g{ color:var(--gold); }
+.clval { font-size:14px; color:var(--off); line-height:1.5; }
+.clval small { display:block; font-size:12px; color:var(--dim); margin-top:3px; }
+
+/* ── SLIDE 6 HAZARDE ── */
+#s6 .bg { background:linear-gradient(170deg,#150202 0%,#2A0A00 45%,#3D1500 85%,#1A0500 100%); }
+#s6 .w1{background:rgba(100,20,0,.6)} #s6 .w2{background:rgba(140,40,0,.5)}
+#s6 .w3{background:rgba(170,60,10,.4)} #s6 .w4{background:rgba(190,80,20,.3)}
+#s6 .sbar{background:rgba(60,10,0,.65);border-color:rgba(255,107,53,.2);}
+#s6 .slabel{color:var(--danger);}
+.hgrid { display:grid; grid-template-columns:repeat(3,1fr); gap:18px; padding:20px 50px 110px; flex:1; }
+.hcard { background:rgba(20,5,0,.55); border:1px solid rgba(255,107,53,.22); border-top:4px solid var(--danger); border-radius:8px; padding:24px 22px; animation:slideUp .6s both; transition:transform .25s; }
+.hcard:hover{ transform:translateY(-5px); }
+.hcard:nth-child(2){animation-delay:.1s;border-top-color:#FF4500}
+.hcard:nth-child(3){animation-delay:.2s;border-top-color:var(--gold)}
+.hcard:nth-child(4){animation-delay:.3s;border-top-color:var(--cyan)}
+.hcard:nth-child(5){animation-delay:.4s;border-top-color:var(--danger)}
+.hcard:nth-child(6){animation-delay:.5s;border-top-color:var(--light)}
+.hhead { display:flex; align-items:center; gap:14px; margin-bottom:16px; }
+.hicn { font-size:34px; }
+.htit { font-family:'Barlow Condensed'; font-size:23px; font-weight:700; color:var(--white); }
+.hdesc { font-size:15px; line-height:1.8; color:#FFB8A0; }
+
+/* ── SLIDE 7 GALERIE ── */
+.galerie { display:grid; grid-template-columns:repeat(3,1fr); position:absolute; inset:0; }
+.gpanel { position:relative; overflow:hidden; cursor:zoom-in; }
+.gpanel img { width:100%; height:100%; object-fit:cover; transition:transform .7s ease,filter .5s; filter:brightness(.75) saturate(.9); }
+.gpanel:hover img { transform:scale(1.07); filter:brightness(1) saturate(1.1); }
+.gpanel::after { content:''; position:absolute; inset:0; background:linear-gradient(to top,rgba(3,7,30,.75) 0%,transparent 55%); pointer-events:none; }
+.gsep { position:absolute; top:0; bottom:0; right:0; width:1px; background:rgba(0,180,216,.35); z-index:2; }
+.gcap { position:absolute; bottom:28px; left:0; right:0; z-index:3; text-align:center; font-family:'Barlow Condensed'; font-size:19px; letter-spacing:1px; color:var(--ice); text-shadow:0 2px 12px rgba(0,0,0,.9); }
+/* photo missing placeholder */
+.gph { width:100%; height:100%; background:rgba(2,62,138,.6); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:18px; }
+.gph-icn{ font-size:60px; opacity:.5; }
+.gph-txt { font-family:'Barlow Condensed'; font-size:17px; letter-spacing:1px; color:var(--dim); text-align:center; padding:0 24px; line-height:1.7; }
+.gph-txt code { background:rgba(0,180,216,.2); color:var(--cyan); padding:2px 8px; border-radius:3px; }
+.gph-btn { background:rgba(0,180,216,.2); border:1px solid var(--light); color:var(--light); padding:11px 24px; border-radius:4px; font-family:'Barlow Condensed'; font-size:15px; letter-spacing:2px; cursor:pointer; transition:background .2s; text-decoration:none; }
+.gph-btn:hover{ background:rgba(0,180,216,.4); }
+
+/* ── SLIDES 8,9,10 EXEMPLE ── */
+.exbody { display:grid; grid-template-columns:1fr 1fr; gap:24px; padding:20px 50px 110px; flex:1; }
+.excard { background:rgba(2,62,138,.4); border:1px solid rgba(0,180,216,.2); border-radius:10px; overflow:hidden; display:flex; flex-direction:column; animation:slideUp .7s both; }
+.excard:nth-child(2){animation-delay:.15s}
+.exbanner { background:rgba(0,120,180,.4); padding:16px 24px; display:flex; align-items:center; justify-content:space-between; }
+.exyear { font-family:'Bebas Neue'; font-size:40px; color:var(--white); letter-spacing:4px; }
+.extag { font-family:'Barlow Condensed'; font-size:12px; font-weight:700; letter-spacing:3px; padding:6px 14px; border-radius:4px; text-transform:uppercase; }
+.tv{background:rgba(255,107,53,.3);color:var(--danger);border:1px solid var(--danger);}
+.ts{background:rgba(0,180,216,.3);color:var(--light);border:1px solid var(--light);}
+.tr{background:rgba(255,107,53,.3);color:var(--danger);border:1px solid var(--danger);}
+.exname { font-family:'Barlow Condensed'; font-size:30px; font-weight:700; color:var(--white); padding:18px 24px 6px; }
+.exstats { display:flex; gap:12px; padding:8px 24px 16px; }
+.exst { flex:1; background:rgba(0,0,0,.25); border:1px solid rgba(0,180,216,.2); border-radius:6px; padding:12px 10px; text-align:center; }
+.exstv { font-family:'Bebas Neue'; font-size:28px; color:var(--gold); letter-spacing:1px; }
+.exstl { font-family:'Barlow Condensed'; font-size:12px; color:var(--dim); letter-spacing:1px; margin-top:3px; }
+.exdesc { font-size:15px; line-height:1.8; color:var(--off); padding:0 24px 16px; flex:1; }
+.exphoto { position:relative; overflow:hidden; min-height:160px; flex:1; }
+.exphoto img { width:100%; height:100%; object-fit:cover; filter:brightness(.8); transition:filter .4s; display:block; }
+.exphoto:hover img{ filter:brightness(1); }
+.exphoto::before { content:''; position:absolute; top:0; left:0; right:0; height:50%; background:linear-gradient(to bottom,rgba(2,62,138,.5),transparent); z-index:1; pointer-events:none; }
+.exphoto .miss { display:flex; align-items:center; justify-content:center; height:100%; background:rgba(2,62,138,.5); color:var(--dim); font-family:'Barlow Condensed'; font-size:15px; letter-spacing:2px; padding:20px; text-align:center; }
+
+/* slide 10 single */
+.exsingle { padding:20px 50px 110px; flex:1; }
+.exscard { background:rgba(2,62,138,.4); border:1px solid rgba(0,180,216,.2); border-radius:10px; overflow:hidden; height:100%; display:grid; grid-template-columns:1fr 1fr; animation:slideUp .7s .1s both; }
+.exsleft { display:flex; flex-direction:column; }
+.exsphoto { position:relative; overflow:hidden; flex:1; min-height:200px; }
+.exsphoto img { width:100%; height:100%; object-fit:cover; filter:brightness(.8); transition:filter .4s; display:block; }
+.exsphoto:hover img{ filter:brightness(1); }
+.exsphoto .miss { display:flex; align-items:center; justify-content:center; height:100%; background:rgba(2,62,138,.5); color:var(--dim); font-family:'Barlow Condensed'; font-size:15px; letter-spacing:1px; padding:20px; text-align:center; }
+.exsright { display:flex; flex-direction:column; padding:30px 34px; }
+.badge { display:inline-flex; align-items:center; gap:8px; background:rgba(255,107,53,.2); border:1px solid var(--danger); color:var(--danger); padding:6px 16px; border-radius:20px; font-family:'Barlow Condensed'; font-size:13px; font-weight:700; letter-spacing:3px; margin-bottom:22px; width:fit-content; }
+.bigyear { font-family:'Bebas Neue'; font-size:100px; color:var(--light); letter-spacing:10px; line-height:1; text-shadow:0 0 50px rgba(0,180,216,.35); }
+.bigname { font-family:'Barlow Condensed'; font-size:30px; font-weight:700; color:var(--white); margin:10px 0 18px; }
+.bsep { width:55px; height:2px; background:var(--light); margin-bottom:22px; }
+.bstats { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; margin-bottom:22px; }
+.bdesc { font-size:15px; line-height:1.85; color:var(--off); flex:1; }
+
+/* ── SLIDE 11 CONCLUZII ── */
+#s11 .content { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; padding-bottom:100px; z-index:5; text-align:center; }
+.cquote { font-family:'Barlow'; font-size:clamp(20px,3vw,32px); font-style:italic; font-weight:300; color:var(--white); max-width:720px; line-height:1.7; margin-bottom:32px; animation:titleIn .8s .2s both; }
+.cline { width:110px; height:2px; background:linear-gradient(90deg,transparent,var(--light),transparent); margin-bottom:40px; animation:fadeIn .8s .5s both; }
+.clist { display:flex; flex-direction:column; gap:16px; max-width:720px; }
+.citem { display:flex; align-items:flex-start; gap:18px; background:rgba(2,62,138,.45); border:1px solid rgba(0,180,216,.18); border-radius:8px; padding:18px 24px; text-align:left; animation:slideUp .6s both; }
+.citem:nth-child(1){animation-delay:.6s} .citem:nth-child(2){animation-delay:.78s} .citem:nth-child(3){animation-delay:.96s}
+.cdot { min-width:12px; height:12px; border-radius:50%; background:var(--light); margin-top:7px; }
+.ctxt { font-size:17px; line-height:1.75; color:var(--off); }
+.cthanks { font-family:'Barlow Condensed'; font-size:28px; font-weight:700; letter-spacing:5px; color:var(--ice); margin-top:40px; animation:titleIn .8s 1.2s both; }
+
+
+</style>
+</head>
+<body>
+
+<div id="cur"></div>
+<div id="cur2"></div>
+<div id="prog"></div>
+
+
+<nav id="nav">
+  <button class="nbtn" onclick="go(-1)">&#8592;</button>
+  <div class="ndots" id="dots"></div>
+  <button class="nbtn" onclick="go(1)">&#8594;</button>
+</nav>
+
+<div class="deck">
+
+<!-- ════ SLIDE 1: COVER ════ -->
+<div class="slide on" id="s1">
+  <div class="bg"></div>
+  <div class="wcrash">
+    <div class="ripple rp1"></div>
+    <div class="ripple rp2"></div>
+    <div class="ripple rp3"></div>
+  </div>
+  <div class="ring r3"></div><div class="ring r2"></div><div class="ring r1"></div>
+  <div class="waves"><div class="w w1"></div><div class="w w2"></div><div class="w w3"></div><div class="w w4"></div></div>
+  <div class="content">
+    <h1 class="cover-title">TSUNAMI</h1>
+    <div class="cover-line"></div>
+    <p class="cover-sub">Forța Distructivă a Oceanelor</p>
+    <p class="cover-tag">GEOGRAFIE &nbsp;·&nbsp; HAZARDE NATURALE</p>
+  </div>
+</div>
+
+<!-- ════ SLIDE 2: CUPRINS ════ -->
+<div class="slide" id="s2">
+  <div class="bg"></div>
+  <div class="waves"><div class="w w1"></div><div class="w w2"></div><div class="w w3"></div><div class="w w4"></div></div>
+  <div class="sbar"><span class="slabel">Cuprins</span><span class="scounter">02 / 11</span></div>
+  <div class="cuprins-wrap">
+    <div class="ccard"><div class="cnum">01</div><div class="ctxt"><div class="ctitle">Definiție</div><div class="csub">Ce este un tsunami?</div></div></div>
+    <div class="ccard"><div class="cnum">02</div><div class="ctxt"><div class="ctitle">Cauze</div><div class="csub">Originea fenomenului</div></div></div>
+    <div class="ccard"><div class="cnum">03</div><div class="ctxt"><div class="ctitle">Clasificare</div><div class="csub">Tipuri și scări de măsurare</div></div></div>
+    <div class="ccard"><div class="cnum">04</div><div class="ctxt"><div class="ctitle">Hazarde</div><div class="csub">Riscuri, efecte și impact</div></div></div>
+    <div class="ccard"><div class="cnum">05</div><div class="ctxt"><div class="ctitle">Galerie foto</div><div class="csub">Imagini reale din dezastre</div></div></div>
+    <div class="ccard"><div class="cnum">06</div><div class="ctxt"><div class="ctitle">Exemple notabile</div><div class="csub">Cele mai devastatoare tsunami-uri</div></div></div>
+  </div>
+</div>
+
+<!-- ════ SLIDE 3: DEFINITIE ════ -->
+<div class="slide" id="s3">
+  <div class="bg"></div>
+  <div class="waves"><div class="w w1"></div><div class="w w2"></div><div class="w w3"></div><div class="w w4"></div></div>
+  <div class="sbar"><span class="slabel">01 · Definiție</span><span class="scounter">03 / 11</span></div>
+  <h2 class="stitle">Ce este un Tsunami?</h2>
+  <div class="sbody">
+    <div class="defbox">
+      <p><strong>Tsunami</strong> (津波) este o serie de valuri marine de mare lungime de undă și energie, generate de perturbații bruște ale fundului oceanic sau ale unei mase mari de apă.</p>
+      <br>
+      <p>Cuvântul provine din japoneză: <strong>「津」 tsu</strong> (port) și <strong>「波」 nami</strong> (val) — literalmente <em>„val de port"</em>.</p>
+      <br>
+      <p>Termenul popular <em>„tidal wave"</em> este <strong>incorect</strong> — tsunami-urile nu au nicio legătură cu mareele. Ele sunt generate exclusiv de perturbații geologice sau cosmice bruște ale masei de apă.</p>
+      <div class="kanji">津波</div>
+    </div>
+    <div class="sgrid">
+      <div class="scard"><div class="sval">500–900</div><div class="slbl">km/h în ocean</div></div>
+      <div class="scard"><div class="sval">100–500</div><div class="slbl">km lungimea valului</div></div>
+      <div class="scard"><div class="sval">&lt; 1 m</div><div class="slbl">înălțime în larg</div></div>
+      <div class="scard"><div class="sval">40+ m</div><div class="slbl">înălțime la țărm</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ════ SLIDE 4: CAUZE ════ -->
+<div class="slide" id="s4">
+  <div class="bg"></div>
+  <div class="waves"><div class="w w1"></div><div class="w w2"></div><div class="w w3"></div><div class="w w4"></div></div>
+  <div class="sbar"><span class="slabel">02 · Cauze</span><span class="scounter">04 / 11</span></div>
+  <h2 class="stitle">Ce Provoacă un Tsunami?</h2>
+  <div class="cgrid">
+    <div class="ccrd"><div class="cicn">🏔️</div><div class="ctit">Cutremure submarine</div><div class="csep"></div><div class="cdesc">Principala cauză (&gt;80%). Mișcarea bruscă a plăcilor tectonice sub ocean deplasează vertical coloana de apă, generând valuri concentrice cu energie uriașă.</div></div>
+    <div class="ccrd"><div class="cicn">⬇️</div><div class="ctit">Alunecări de teren</div><div class="csep"></div><div class="cdesc">Submarine sau costiere. Deplasarea masivă de sedimente și roci poate genera valuri locale extrem de devastatoare, uneori mai mari decât cele seismice.</div></div>
+    <div class="ccrd"><div class="cicn">🌋</div><div class="ctit">Erupții vulcanice</div><div class="csep"></div><div class="cdesc">Vulcanii submarini sau colapsul unui con vulcanic (ex: Krakatau 1883, Anak Krakatau 2018) perturbă violent coloana de apă oceanic.</div></div>
+    <div class="ccrd"><div class="cicn">☄️</div><div class="ctit">Impact meteoritic</div><div class="csep"></div><div class="cdesc">Extrem de rar în era modernă. Un asteroid sau meteorit care cade în ocean poate genera mega-tsunami-uri cu energie colosală și propagare globală.</div></div>
+  </div>
+</div>
+
+<!-- ════ SLIDE 5: CLASIFICARE ════ -->
+<div class="slide" id="s5">
+  <div class="bg"></div>
+  <div class="waves"><div class="w w1"></div><div class="w w2"></div><div class="w w3"></div><div class="w w4"></div></div>
+  <div class="sbar"><span class="slabel">03 · Clasificare</span><span class="scounter">05 / 11</span></div>
+  <h2 class="stitle">Tipuri de Tsunami</h2>
+  <div class="clbody">
+    <div>
+      <div class="clhead">DUPĂ ORIGINE</div>
+      <div class="cltbl">
+        <div class="clrow" style="animation-delay:.08s"><div class="clkey">Seismic</div><div class="clval">Produs de cutremure submarine; cel mai frecvent tip (&gt;80%)</div></div>
+        <div class="clrow" style="animation-delay:.16s"><div class="clkey">Vulcanic</div><div class="clval">Asociat erupțiilor sau colapsului unui con vulcanic</div></div>
+        <div class="clrow" style="animation-delay:.24s"><div class="clkey">Gravitațional</div><div class="clval">Provocat de alunecări submarine de teren sau sedimente masive</div></div>
+        <div class="clrow" style="animation-delay:.32s"><div class="clkey">Meteoritic</div><div class="clval">Impact extraterestru în ocean — extrem de rar în istoria recentă</div></div>
+        <div class="clrow" style="animation-delay:.40s"><div class="clkey">Local</div><div class="clval">Afectează doar coasta cea mai apropiată (&lt;1h propagare)</div></div>
+        <div class="clrow" style="animation-delay:.48s"><div class="clkey">Teledistanță</div><div class="clval">Se propagă mii de km, traversând oceane întregi</div></div>
+      </div>
+    </div>
+    <div>
+      <div class="clhead">SCARA SIEBERG-AMBRASEYS (Intensitate)</div>
+      <div class="cltbl">
+        <div class="clrow" style="animation-delay:.08s"><div class="clkey g">I – II</div><div class="clval">Slab<small>Detectat doar de instrumente, fără efecte vizibile pe coastă</small></div></div>
+        <div class="clrow" style="animation-delay:.16s"><div class="clkey g">III</div><div class="clval">Moderat<small>Observat pe coastă, pagube minore la infrastructură</small></div></div>
+        <div class="clrow" style="animation-delay:.24s"><div class="clkey g">IV</div><div class="clval">Puternic<small>Inundații costiere, pagube moderate, evacuări locale</small></div></div>
+        <div class="clrow" style="animation-delay:.32s"><div class="clkey g">V</div><div class="clval">Sever<small>Distrugeri extinse, sute de victime, zone întregi devastate</small></div></div>
+        <div class="clrow" style="animation-delay:.40s"><div class="clkey g">VI</div><div class="clval">Catastrofal<small>Devastare totală pe sute de km, zeci de mii de victime</small></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════ SLIDE 6: HAZARDE ════ -->
+<div class="slide" id="s6">
+  <div class="bg"></div>
+  <div class="waves"><div class="w w1"></div><div class="w w2"></div><div class="w w3"></div><div class="w w4"></div></div>
+  <div class="sbar"><span class="slabel">04 · Hazarde</span><span class="scounter">06 / 11</span></div>
+  <h2 class="stitle">Riscuri, Efecte și Impact</h2>
+  <div class="hgrid">
+    <div class="hcard"><div class="hhead"><span class="hicn">🌊</span><span class="htit">Inundații masive</span></div><div class="hdesc">Valurile penetrează adânc în uscat, inundând zone extinse costiere și distrugând totul în cale — case, culturi agricole, păduri, infrastructuri.</div></div>
+    <div class="hcard"><div class="hhead"><span class="hicn">💀</span><span class="htit">Victime umane</span></div><div class="hdesc">Tsunami-urile cauzează zeci de mii de victime. Tsunamiul din 2004 în Oceanul Indian a ucis <strong style="color:var(--gold)">peste 230.000 de oameni</strong> în 14 țări.</div></div>
+    <div class="hcard"><div class="hhead"><span class="hicn">🏚️</span><span class="htit">Distrugeri structurale</span></div><div class="hdesc">Clădiri, poduri, porturi, centrale nucleare și infrastructuri critice sunt demolate complet de forța mecanică a valurilor.</div></div>
+    <div class="hcard"><div class="hhead"><span class="hicn">☣️</span><span class="htit">Poluare și boli</span></div><div class="hdesc">Apa sărată contaminează solul agricol și sursele de apă potabilă. Riscul de epidemii (holeră, tifos) crește dramatic după dezastru.</div></div>
+    <div class="hcard"><div class="hhead"><span class="hicn">📉</span><span class="htit">Impact economic</span></div><div class="hdesc">Pierderile economice ating sute de miliarde USD. Reconstrucția Japoniei după 2011 a costat <strong style="color:var(--gold)">~235 miliarde $</strong>.</div></div>
+    <div class="hcard"><div class="hhead"><span class="hicn">🗺️</span><span class="htit">Modificări geografice</span></div><div class="hdesc">Eroziunea costieră severă, modificarea liniei țărmului, depuneri masive de sedimente și distrugerea totală a ecosistemelor marine.</div></div>
+  </div>
+</div>
+
+<!-- ════ SLIDE 7: GALERIE FOTO ════ -->
+<div class="slide" id="s7">
+  <div class="galerie">
+    <div class="gpanel">
+      <img src="poza1.jpg" alt="Tsunami 2004 Thailand" id="img1">
+      <div class="gph" id="ph1" style="display:none">
+        <div class="gph-icn">🌊</div>
+        <div class="gph-txt"><strong style="color:var(--white)">Tsunami 2004 — Khao Lak, Thailanda</strong><br><br>Salvează o poză cu numele<br><code>poza1.jpg</code><br>în același folder cu HTML-ul</div>
+        <a href="#" class="gph-btn" onclick="showGuide();return false">📷 Instrucțiuni complete</a>
+      </div>
+      <div class="gsep"></div>
+      <div class="gcap">Tsunami 2004 — Khao Lak, Thailanda</div>
+    </div>
+    <div class="gpanel">
+      <img src="poza2.jpg" alt="Japonia 2011" id="img2">
+      <div class="gph" id="ph2" style="display:none">
+        <div class="gph-icn">🏯</div>
+        <div class="gph-txt"><strong style="color:var(--white)">Japonia 2011 — Tohoku</strong><br><br>Salvează o poză cu numele<br><code>poza2.jpg</code><br>în același folder cu HTML-ul</div>
+        <a href="#" class="gph-btn" onclick="showGuide();return false">📷 Instrucțiuni complete</a>
+      </div>
+      <div class="gsep"></div>
+      <div class="gcap">Japonia 2011 — Vedere aeriană, Tohoku</div>
+    </div>
+    <div class="gpanel">
+      <img src="poza3.jpg" alt="Tsunami devastare" id="img3">
+      <div class="gph" id="ph3" style="display:none">
+        <div class="gph-icn">🌏</div>
+        <div class="gph-txt"><strong style="color:var(--white)">Tsunami — Distrugere costieră</strong><br><br>Salvează o poză cu numele<br><code>poza3.jpg</code><br>în același folder cu HTML-ul</div>
+        <a href="#" class="gph-btn" onclick="showGuide();return false">📷 Instrucțiuni complete</a>
+      </div>
+      <div class="gcap">Efecte devastatoare asupra coastei</div>
+    </div>
+  </div>
+</div>
+
+<!-- ════ SLIDE 8: KRAKATAU 1883 ════ -->
+<div class="slide" id="s8">
+  <div class="bg"></div>
+  <div class="waves"><div class="w w1"></div><div class="w w2"></div><div class="w w3"></div><div class="w w4"></div></div>
+  <div class="sbar"><span class="slabel">06 · Exemple — 1 din 3</span><span class="scounter">08 / 11</span></div>
+  <h2 class="stitle">Krakatau, Indonezia — 1883</h2>
+  <div class="exbody">
+    <div class="excard">
+      <div class="exbanner"><span class="exyear">1883</span><span class="extag tv">VULCANIC</span></div>
+      <div class="exname">Krakatau, Indonezia</div>
+      <div class="exstats">
+        <div class="exst"><div class="exstv">36.000+</div><div class="exstl">Victime</div></div>
+        <div class="exst"><div class="exstv">37 m</div><div class="exstl">Val maxim</div></div>
+        <div class="exst"><div class="exstv">5.000 km</div><div class="exstl">Sunetul auzit</div></div>
+      </div>
+      <div class="exdesc">Erupția catastrofală a vulcanului Krakatau a demolat insula și a declanșat unul dintre cele mai devastatoare tsunami-uri din istorie. Valurile au distrus peste 165 de sate și orașe de-a lungul coastelor Indoneziei.</div>
+      <div class="exphoto">
+        <img src="poza_krakatau.jpg" alt="Krakatau 1883" id="imgK1" style="display:block">
+        <div class="miss" id="mK1" style="display:none">[ Adaugă poza_krakatau.jpg ]</div>
+      </div>
+    </div>
+    <div class="excard">
+      <div class="exbanner" style="background:rgba(0,100,150,.35)"><span class="exyear" style="font-size:24px;letter-spacing:1px">Context Geologic</span></div>
+      <div class="exdesc" style="padding-top:22px;font-size:15px;flex:1">
+        <strong style="color:var(--cyan)">Locație:</strong> Strâmtoarea Sunda, între Java și Sumatra, Indonezia.<br><br>
+        <strong style="color:var(--cyan)">Mecanism:</strong> Prăbușirea caldera vulcanică a golit camera magmatică, provocând colapsul insulei și deplasarea bruscă a milioane de tone de apă.<br><br>
+        <strong style="color:var(--cyan)">Propagare:</strong> Valurile s-au propagat prin Oceanul Indian și au fost detectate până în Europa și America de Sud.<br><br>
+        <strong style="color:var(--cyan)">Moștenire:</strong> A condus la primele studii sistematice ale tsunami-urilor și la înțelegerea mecanismelor eruptive submarine.
+      </div>
+      <div class="exphoto">
+        <img src="poza_krakatau2.jpg" alt="Krakatau insula" id="imgK2" style="display:block">
+        <div class="miss" id="mK2" style="display:none">[ Adaugă poza_krakatau2.jpg ]</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════ SLIDE 9: OCEANUL INDIAN 2004 ════ -->
+<div class="slide" id="s9">
+  <div class="bg"></div>
+  <div class="waves"><div class="w w1"></div><div class="w w2"></div><div class="w w3"></div><div class="w w4"></div></div>
+  <div class="sbar"><span class="slabel">06 · Exemple — 2 din 3</span><span class="scounter">09 / 11</span></div>
+  <h2 class="stitle">Oceanul Indian — 2004</h2>
+  <div class="exbody">
+    <div class="excard">
+      <div class="exbanner"><span class="exyear">2004</span><span class="extag ts">SEISMIC</span></div>
+      <div class="exname">Oceanul Indian</div>
+      <div class="exstats">
+        <div class="exst"><div class="exstv">230.000+</div><div class="exstl">Victime</div></div>
+        <div class="exst"><div class="exstv">Mw 9.1</div><div class="exstl">Magnitudine</div></div>
+        <div class="exst"><div class="exstv">14 țări</div><div class="exstl">Afectate</div></div>
+      </div>
+      <div class="exdesc">Cel mai mortal tsunami din istoria modernă, declanșat de un cutremur Mw 9.1 la 26 decembrie 2004, în largul coastei Sumatrei. A afectat India, Sri Lanka, Indonezia, Thailanda și alte 10 țări. A dus la crearea sistemului global de avertizare tsunami.</div>
+      <div class="exphoto">
+        <img src="poza_2004.jpg" alt="Tsunami 2004" id="imgO1" style="display:block">
+        <div class="miss" id="mO1" style="display:none">[ Adaugă poza_2004.jpg ]</div>
+      </div>
+    </div>
+    <div class="excard">
+      <div class="exbanner" style="background:rgba(0,100,150,.35)"><span class="exyear" style="font-size:24px;letter-spacing:1px">Impact și Urmări</span></div>
+      <div class="exdesc" style="padding-top:22px;font-size:15px;flex:1">
+        <strong style="color:var(--cyan)">26 decembrie 2004</strong> — Cutremur la 30 km adâncime, la 250 km vest de Banda Aceh, Sumatra.<br><br>
+        <strong style="color:var(--cyan)">Energia eliberată:</strong> Echivalentă cu 23.000 de bombe atomice — cea mai mare energie seismică în 40 de ani.<br><br>
+        <strong style="color:var(--cyan)">Indonezia</strong> a înregistrat cele mai mari pierderi: 167.000+ victime, în special în provincia Aceh.<br><br>
+        <strong style="color:var(--cyan)">Consecință globală:</strong> Comunitatea internațională a investit masiv în sisteme de detectare și avertizare tsunami în ocean.
+      </div>
+      <div class="exphoto">
+        <img src="poza_2004b.jpg" alt="2004 aftermath" id="imgO2" style="display:block">
+        <div class="miss" id="mO2" style="display:none">[ Adaugă poza_2004b.jpg ]</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════ SLIDE 10: ANAK KRAKATAU 2018 ════ -->
+<div class="slide" id="s10">
+  <div class="bg"></div>
+  <div class="waves"><div class="w w1"></div><div class="w w2"></div><div class="w w3"></div><div class="w w4"></div></div>
+  <div class="sbar"><span class="slabel">06 · Exemple — 3 din 3 · RECENT</span><span class="scounter">10 / 11</span></div>
+  <div class="exsingle">
+    <div class="exscard">
+      <div class="exsleft">
+        <div class="exbanner"><span class="exyear">2018</span><span class="extag tr">VULCANIC</span></div>
+        <div class="exsphoto">
+          <img src="poza_2018.jpg" alt="Anak Krakatau 2018" id="imgA" style="display:block">
+          <div class="miss" id="mA" style="display:none">[ Adaugă poza_2018.jpg ]</div>
+        </div>
+      </div>
+      <div class="exsright">
+        <div class="badge">🔴 RECENT · ULTIMII 10 ANI</div>
+        <div class="bigyear">2018</div>
+        <div class="bigname">Indonezia — Anak Krakatau</div>
+        <div class="bsep"></div>
+        <div class="bstats">
+          <div class="exst"><div class="exstv">22 dec.</div><div class="exstl">Data</div></div>
+          <div class="exst"><div class="exstv">437</div><div class="exstl">Victime</div></div>
+          <div class="exst"><div class="exstv">3 m</div><div class="exstl">Val maxim</div></div>
+          <div class="exst"><div class="exstv">Vulcanic</div><div class="exstl">Tip</div></div>
+        </div>
+        <div class="bdesc">
+          Pe 22 decembrie 2018, prăbușirea parțială a conului vulcanic <strong style="color:var(--cyan)">Anak Krakatau</strong> — „Fiul lui Krakatau" — în Strâmtoarea Sunda a declanșat un tsunami care a lovit <em>fără avertisment</em> coastele Indoneziei.<br><br>
+          Evenimentul a demonstrat pericolul tsunami-urilor vulcanice, care <strong style="color:var(--gold)">nu pot fi prezise de sistemele seismice convenționale</strong>. Valurile au lovit în timp ce localnicii participau la un concert pe plajă — subliniind urgent necesitatea unor sisteme de detectare mai avansate.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════ SLIDE 11: CONCLUZII ════ -->
+<div class="slide" id="s11">
+  <div class="bg"></div>
+  <div class="ring r3"></div><div class="ring r2"></div><div class="ring r1"></div>
+  <div class="waves"><div class="w w1"></div><div class="w w2"></div><div class="w w3"></div><div class="w w4"></div></div>
+  <div class="sbar"><span class="slabel">Concluzii</span><span class="scounter">11 / 11</span></div>
+  <div class="content">
+    <p class="cquote">„Natura are puterea de a remodela lumea —<br>datoria noastră este să o înțelegem."</p>
+    <div class="cline"></div>
+    <div class="clist">
+      <div class="citem"><div class="cdot"></div><div class="ctxt">Tsunami-urile sunt fenomene naturale extrem de periculoase, greu de prevenit, dar posibil de anticipat cu sisteme de avertizare adecvate.</div></div>
+      <div class="citem"><div class="cdot"></div><div class="ctxt">Sistemele de avertizare timpurie și educația populației costiere pot salva zeci de mii de vieți în cazul unui nou dezastru.</div></div>
+      <div class="citem"><div class="cdot"></div><div class="ctxt">Colaborarea internațională și investițiile în monitorizarea geologică sunt esențiale pentru reducerea impactului catastrofelor naturale.</div></div>
+    </div>
+    <div class="cthanks">Mulțumesc pentru atenție!</div>
+    <div style="margin-top:18px; animation:fadeIn .8s 1.5s both; font-family:'Barlow Condensed'; font-size:20px; letter-spacing:3px; color:var(--dim);">Realizat de <strong style="color:var(--white)">Banita Alexandru</strong> &nbsp;·&nbsp; <span style="color:var(--cyan)">Clasa a-XI-a E</span></div>
+  </div>
+</div>
+
+</div><!-- /deck -->
+
+<script>
+// ════ SLIDE ENGINE ════
+const TOTAL = 11;
+let cur = 0, busy = false;
+const slides = document.querySelectorAll('.slide');
+const dotsEl = document.getElementById('dots');
+const prog   = document.getElementById('prog');
+
+for (let i = 0; i < TOTAL; i++) {
+  const d = document.createElement('div');
+  d.className = 'dot' + (i===0?' on':'');
+  d.onclick = () => goTo(i);
+  dotsEl.appendChild(d);
+}
+
+function updateUI() {
+  prog.style.width = ((cur+1)/TOTAL*100)+'%';
+  document.querySelectorAll('.dot').forEach((d,i) => d.classList.toggle('on', i===cur));
+}
+
+function goTo(idx) {
+  if (busy || idx===cur || idx<0 || idx>=TOTAL) return;
+  busy = true;
+  slides[cur].classList.remove('on');
+  cur = idx;
+  slides[cur].classList.add('on');
+  // re-trigger CSS animations
+  const animated = slides[cur].querySelectorAll('.ccard,.ccrd,.hcard,.excard,.citem,.scard,.clrow,.defbox,.cgrid,.stitle');
+  animated.forEach(el => {
+    el.style.animationName = 'none';
+    void el.offsetHeight;
+    el.style.animationName = '';
+  });
+  updateUI();
+  setTimeout(() => { busy = false; }, 700);
+}
+
+function go(d) { goTo(cur + d); }
+
+// Keyboard navigation
+document.addEventListener('keydown', e => {
+  if (e.key==='ArrowRight'||e.key==='ArrowDown'||e.key===' ') { e.preventDefault(); go(1); }
+  if (e.key==='ArrowLeft' ||e.key==='ArrowUp')                { e.preventDefault(); go(-1); }
+  if (e.key==='Home')    goTo(0);
+  if (e.key==='End')     goTo(TOTAL-1);
+
+});
+
+// Click anywhere to advance (skip nav, gallery, modal, help)
+document.addEventListener('click', e => {
+  if (e.target.closest('#nav')||e.target.closest('.gpanel')) return;
+  go(1);
+});
+
+// Touch swipe
+let tx=0;
+document.addEventListener('touchstart',e=>{tx=e.touches[0].clientX;},{passive:true});
+document.addEventListener('touchend',e=>{
+  const dx=e.changedTouches[0].clientX-tx;
+  if(Math.abs(dx)>50) go(dx<0?1:-1);
+},{passive:true});
+
+// ════ CURSOR ════
+const c1=document.getElementById('cur'),c2=document.getElementById('cur2');
+document.addEventListener('mousemove',e=>{
+  c1.style.left=e.clientX+'px'; c1.style.top=e.clientY+'px';
+  c2.style.left=e.clientX+'px'; c2.style.top=e.clientY+'px';
+});
+document.addEventListener('mousedown',()=>c1.style.transform='translate(-50%,-50%) scale(.6)');
+document.addEventListener('mouseup',  ()=>c1.style.transform='translate(-50%,-50%) scale(1)');
+
+// ════ PHOTO ERROR HANDLING ════
+// For each img, if it fails to load show the placeholder div
+const imgMap = [
+  ['img1','ph1'],['img2','ph2'],['img3','ph3'],
+  ['imgK1','mK1'],['imgK2','mK2'],
+  ['imgO1','mO1'],['imgO2','mO2'],
+  ['imgA','mA']
+];
+imgMap.forEach(([imgId, phId]) => {
+  const img = document.getElementById(imgId);
+  const ph  = document.getElementById(phId);
+  if (!img || !ph) return;
+  img.addEventListener('error', () => {
+    img.style.display = 'none';
+    ph.style.display  = 'flex';
+  });
+  // also check if already broken (cached error)
+  if (img.complete && img.naturalWidth === 0) {
+    img.style.display = 'none';
+    ph.style.display  = 'flex';
+  }
+});
+
+updateUI();
+</script>
+</body>
+</html>
